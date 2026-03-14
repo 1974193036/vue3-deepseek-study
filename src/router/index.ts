@@ -11,7 +11,7 @@ const router = createRouter({
   // 滚动行为 - 始终滚动到顶部
   scrollBehavior() {
     return { top: 0 }
-  }
+  },
 })
 
 // 全局前置守卫(这里可以做权限校验，比如登录判断)
@@ -26,7 +26,8 @@ router.afterEach((to: any, _from: any) => {
   const _title = to.meta.title
   if (_title) {
     window.document.title = _title
-  } else {
+  }
+  else {
     window.document.title = '基于Vue3+DeepSeek开发AI问答助手'
   }
 })
