@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Brush, Delete, EditPen, Plus, Promotion } from '@element-plus/icons-vue'
 import MessageComp from './component/MessageComp.vue'
 import { useChatStore } from '@/store/chatStore'
@@ -69,7 +69,47 @@ function handleClearStorage() {
 // 发送对话
 async function handleRequest() {
   const text = queryKeys.value.trim()
-  console.log(text)
+  if (!text) {
+    ElMessage.error('请输入问题后再发送')
+    return
+  }
+
+  chatStore.ensureSession()
+
+  const sessionIndex = activeIndex.value
+  const currentSession = chatStore.sessionList[sessionIndex]
+  const isFirstMessage = !!currentSession && currentSession.messages.length === 0
+  if (isFirstMessage) {
+    // eslint-disable-next-line e18e/prefer-static-regex
+    const rawTitle = text.replace(/\s+/g, ' ').trim()
+    const title = rawTitle.length > 16 ? `${rawTitle.slice(0, 16)}...` : rawTitle
+    if (title) {
+      chatStore.updateSessionTitle(sessionIndex, title)
+    }
+  }
+
+  chatStore.appendMessage(
+    {
+      role: 'user',
+      content: text,
+      name: '问答助手',
+      status: 'done',
+    },
+    false,
+    sessionIndex,
+  )
+
+  queryKeys.value = ''
+
+  chatStore.appendMessage(
+    {
+      role: 'assistant',
+      content: '',
+      status: 'streaming',
+    },
+    false,
+    sessionIndex,
+  )
 }
 
 onMounted(() => {

@@ -113,5 +113,22 @@ export const useChatStore = defineStore('chat', {
       this.loading = false
       localStorage.clear()
     },
+    ensureSession() {
+      if (!this.sessionList.length) {
+        this.addSession()
+      }
+    },
+    appendMessage(message: ChatMessage, persist = true, sessionIndex?: number) {
+      this.ensureSession()
+      const targetIndex = typeof sessionIndex === 'number' && sessionIndex > -1 ? sessionIndex : this.activeIndex
+      const session = this.sessionList[targetIndex]
+      if (!session)
+        return
+      session.messages.push({
+        ...normalizeMessage(message),
+      })
+      if (persist)
+        this.schedulePersist()
+    },
   },
 })

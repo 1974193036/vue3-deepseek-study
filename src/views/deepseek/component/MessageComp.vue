@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
-
-interface ChatMessage {
-  role: 'assistant' | 'user' | 'system'
-  content?: string
-  status?: 'sending' | 'streaming' | 'done' | 'error'
-}
+import DOMPurify from 'dompurify'
+import MarkdownIt from 'markdown-it'
+import type { ChatMessage } from '@/store/chatStore'
 
 const props = withDefaults(
   defineProps<{
@@ -36,6 +33,14 @@ watch(
   },
   { deep: true },
 )
+
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+  breaks: true,
+})
+const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''))
 </script>
 
 <template>
@@ -54,9 +59,17 @@ watch(
 
           <div class="message-item-content" :class="[item.role === 'assistant' ? 'message-item-content-left' : 'message-item-content-right']">
             <div class="message-item-text">
-              <div>这里渲染markdown的内容</div>
-              <div v-if="item.role === 'assistant'">
+              <div v-html="renderMarkdown(item.content || '')" />
+              <!-- <div v-if="item.role === 'assistant'">
                 这里展示加载中...
+              </div> -->
+              <div v-if="item.role === 'assistant' && item.status" class="status-row">
+                <div v-if="item.status === 'streaming'" class="thinking-indicator">
+                  <span class="thinking-text">思考中</span>
+                  <span class="dot" />
+                  <span class="dot" />
+                  <span class="dot" />
+                </div>
               </div>
             </div>
           </div>
