@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  document.body.style.setProperty('--el-color-primary', '#1677ff') // 主蓝色
+  document.body.style.setProperty('--el-color-primary-light-3', '#3b82f6') // 中蓝色
+  document.body.style.setProperty('--el-color-primary-light-9', '#dbeafe') // 浅蓝色
+})
+</script>
+
 <template>
   <router-view />
 </template>
