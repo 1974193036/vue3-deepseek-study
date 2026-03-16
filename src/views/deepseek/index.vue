@@ -110,6 +110,42 @@ async function handleRequest() {
     false,
     sessionIndex,
   )
+
+  loading.value = true
+
+  try {
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: [{ role: "system", content: text }],
+      }),
+    });
+    const reader = res.body?.getReader(); // 先创建一个 reader 对象
+    // 创建一个解码器
+    const decoder = new TextDecoder("utf-8");
+    while(true){
+      const {done, value} = await reader!.read();
+      if(done) break;
+
+      const chunk = decoder.decode(value, { stream: true});
+      const lines = chunk.split("\n\n").filter(line=>line.trim());
+      for(const line of lines){
+        try{
+          const data = JSON.parse(line.replace('data: ', '')); // data = {"response":"你好"}
+          console.log(data)
+        }catch(e){
+          console.error("JSON解析失败☹️", e);
+        }
+      }
+    }
+  } catch(e) {
+
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
