@@ -6,6 +6,7 @@ import { Brush, Delete, EditPen, Plus, Promotion } from '@element-plus/icons-vue
 import MessageComp from './component/MessageComp.vue'
 import { useChatStore } from '@/store/chatStore'
 import { streamChatWithRetry } from '@/api/llm'
+import { buildContext } from '@/utils/buildContext'
 
 const chatStore = useChatStore()
 const { sessionList, activeIndex, editIndex, queryKeys, loading, activeMessages } = storeToRefs(chatStore)
@@ -113,23 +114,51 @@ async function handleRequest() {
     sessionIndex,
   )
 
+  const assistantIndex = (chatStore.sessionList[sessionIndex]?.messages.length ?? 1) - 1;
   loading.value = true
   abortController.value = new AbortController()
+  const outboundMessages = buildContext([...(chatStore.sessionList[sessionIndex]?.messages ?? [])], 6000, 14);
+
+  let deltaBuffer = '';
+  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  const flushDelta = () => {
+    if (!deltaBuffer) return;
+    chatStore.updateLastAssistantDelta(deltaBuffer, false, sessionIndex);
+    deltaBuffer = '';
+  };
+
 
   try {
     await streamChatWithRetry({
-      messages: [{ role: 'system', content: text }],
+      messages: outboundMessages,
       signal: abortController.value.signal,
       onDelta: (deltaText) => {
-        console.log('deltaText', deltaText)
+        // console.log('deltaText', deltaText)
+        deltaBuffer += deltaText;
+        if (flushTimer) return;
+        flushTimer = setTimeout(() => {
+          // 节流执行flushDelta
+          flushDelta();
+          flushTimer = null;
+        }, 33);
       },
     })
+
+    flushDelta();
+    chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'done');
+    chatStore.persistNow();
   }
   catch (e) {
     console.log(e)
   }
   finally {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+      flushDelta();
+    }
     loading.value = false
+    abortController.value = null;
   }
 }
 

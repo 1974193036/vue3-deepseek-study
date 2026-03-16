@@ -64,7 +64,7 @@ const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''
                 这里展示加载中...
               </div> -->
               <div v-if="item.role === 'assistant' && item.status" class="status-row">
-                <div v-if="item.status === 'streaming'" class="thinking-indicator">
+                <div v-if="item.status === 'streaming' && !item.content" class="thinking-indicator">
                   <span class="thinking-text">思考中</span>
                   <span class="dot" />
                   <span class="dot" />
