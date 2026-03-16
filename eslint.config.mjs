@@ -10,6 +10,8 @@ export default antfu(
       'perfectionist/sort-imports': 'off',
       'perfectionist/sort-exports': 'off',
       'perfectionist/sort-named-exports': 'off',
+      'node/prefer-global/process': 'off',
+      'no-console': 'off',
     },
   },
 )

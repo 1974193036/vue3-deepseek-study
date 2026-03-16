@@ -5,6 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Brush, Delete, EditPen, Plus, Promotion } from '@element-plus/icons-vue'
 import MessageComp from './component/MessageComp.vue'
 import { useChatStore } from '@/store/chatStore'
+import { streamChatWithRetry } from '@/api/llm'
 
 const chatStore = useChatStore()
 const { sessionList, activeIndex, editIndex, queryKeys, loading, activeMessages } = storeToRefs(chatStore)
@@ -13,6 +14,7 @@ const messageRef = ref<InstanceType<typeof MessageComp> | null>(null)
 
 const filteredSessions = computed(() => sessionList.value.map((item, index) => ({ item, index })))
 
+const abortController = ref<AbortController | null>(null)
 // 新建会话
 function handleAddSession() {
   chatStore.addSession()
@@ -112,38 +114,21 @@ async function handleRequest() {
   )
 
   loading.value = true
+  abortController.value = new AbortController()
 
   try {
-    const res = await fetch('/api/chat/stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+    await streamChatWithRetry({
+      messages: [{ role: 'system', content: text }],
+      signal: abortController.value.signal,
+      onDelta: (deltaText) => {
+        console.log('deltaText', deltaText)
       },
-      body: JSON.stringify({
-        messages: [{ role: "system", content: text }],
-      }),
-    });
-    const reader = res.body?.getReader(); // 先创建一个 reader 对象
-    // 创建一个解码器
-    const decoder = new TextDecoder("utf-8");
-    while(true){
-      const {done, value} = await reader!.read();
-      if(done) break;
-
-      const chunk = decoder.decode(value, { stream: true});
-      const lines = chunk.split("\n\n").filter(line=>line.trim());
-      for(const line of lines){
-        try{
-          const data = JSON.parse(line.replace('data: ', '')); // data = {"response":"你好"}
-          console.log(data)
-        }catch(e){
-          console.error("JSON解析失败☹️", e);
-        }
-      }
-    }
-  } catch(e) {
-
-  } finally {
+    })
+  }
+  catch (e) {
+    console.log(e)
+  }
+  finally {
     loading.value = false
   }
 }
