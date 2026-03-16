@@ -131,19 +131,23 @@ export const useChatStore = defineStore('chat', {
         this.schedulePersist()
     },
     updateLastAssistantDelta(text: string, persist = false, sessionIndex?: number) {
-      const targetIndex = (typeof sessionIndex === 'number' && sessionIndex > -1) ? sessionIndex : this.activeIndex;
-      const session = this.sessionList[targetIndex];
-      if (!session || !session.messages.length) return;
-      const last = session.messages[session.messages.length - 1];
-      if (!last || last.role !== 'assistant') return;
-      last.content += text;
-      if (persist) this.schedulePersist();
+      const targetIndex = (typeof sessionIndex === 'number' && sessionIndex > -1) ? sessionIndex : this.activeIndex
+      const session = this.sessionList[targetIndex]
+      if (!session || !session.messages.length)
+        return
+      const last = session.messages.at(-1)
+      if (!last || last.role !== 'assistant')
+        return
+      last.content += text
+      if (persist)
+        this.schedulePersist()
     },
     updateMessageStatus(sessionIndex: number, messageIndex: number, status: ChatMessage['status'], errorMessage = '') {
-      const session = this.sessionList[sessionIndex];
-      if (!session || !session.messages[messageIndex]) return;
-      session.messages[messageIndex].status = status;
-      session.messages[messageIndex].errorMessage = errorMessage;
+      const session = this.sessionList[sessionIndex]
+      if (!session || !session.messages[messageIndex])
+        return
+      session.messages[messageIndex].status = status
+      session.messages[messageIndex].errorMessage = errorMessage
     },
   },
 })

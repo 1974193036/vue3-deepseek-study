@@ -114,19 +114,19 @@ async function handleRequest() {
     sessionIndex,
   )
 
-  const assistantIndex = (chatStore.sessionList[sessionIndex]?.messages.length ?? 1) - 1;
+  const assistantIndex = (chatStore.sessionList[sessionIndex]?.messages.length ?? 1) - 1
   loading.value = true
   abortController.value = new AbortController()
-  const outboundMessages = buildContext([...(chatStore.sessionList[sessionIndex]?.messages ?? [])], 6000, 14);
+  const outboundMessages = buildContext([...(chatStore.sessionList[sessionIndex]?.messages ?? [])], 6000, 14)
 
-  let deltaBuffer = '';
-  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let deltaBuffer = ''
+  let flushTimer: ReturnType<typeof setTimeout> | null = null
   const flushDelta = () => {
-    if (!deltaBuffer) return;
-    chatStore.updateLastAssistantDelta(deltaBuffer, false, sessionIndex);
-    deltaBuffer = '';
-  };
-
+    if (!deltaBuffer)
+      return
+    chatStore.updateLastAssistantDelta(deltaBuffer, false, sessionIndex)
+    deltaBuffer = ''
+  }
 
   try {
     await streamChatWithRetry({
@@ -134,31 +134,31 @@ async function handleRequest() {
       signal: abortController.value.signal,
       onDelta: (deltaText) => {
         // console.log('deltaText', deltaText)
-        deltaBuffer += deltaText;
-        if (flushTimer) return;
+        deltaBuffer += deltaText
+        if (flushTimer)
+          return
         flushTimer = setTimeout(() => {
           // 节流执行flushDelta
-          flushDelta();
-          flushTimer = null;
-        }, 33);
+          flushDelta()
+          flushTimer = null
+        }, 33)
       },
     })
 
-    flushDelta();
-    chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'done');
-    chatStore.persistNow();
+    flushDelta()
+    chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'done')
+    chatStore.persistNow()
   }
   catch (e) {
     console.log(e)
   }
   finally {
     if (flushTimer) {
-      clearTimeout(flushTimer);
-      flushTimer = null;
-      flushDelta();
+      clearTimeout(flushTimer)
+      flushTimer = null
     }
     loading.value = false
-    abortController.value = null;
+    abortController.value = null
   }
 }
 
