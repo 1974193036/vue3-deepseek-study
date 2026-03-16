@@ -211,3 +211,8 @@
   height: 40px;
   flex: 0 0 96px;
 }
+
+.btn-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}

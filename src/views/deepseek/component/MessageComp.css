@@ -152,3 +152,16 @@
     opacity: 0.55;
   }
 }
+
+.status-tag {
+  font-size: 12px;
+}
+
+.status-error {
+  color: #dc2626;
+}
+
+.retry-btn {
+  font-size: 12px;
+  padding: 0;
+}

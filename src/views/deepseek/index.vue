@@ -6,6 +6,7 @@ import { Brush, Delete, EditPen, Plus, Promotion } from '@element-plus/icons-vue
 import MessageComp from './component/MessageComp.vue'
 import { useChatStore } from '@/store/chatStore'
 import { streamChatWithRetry } from '@/api/llm'
+import type { LlmAppError } from '@/api/llm'
 import { buildContext } from '@/utils/buildContext'
 
 const chatStore = useChatStore()
@@ -16,6 +17,8 @@ const messageRef = ref<InstanceType<typeof MessageComp> | null>(null)
 const filteredSessions = computed(() => sessionList.value.map((item, index) => ({ item, index })))
 
 const abortController = ref<AbortController | null>(null)
+
+const canStop = computed(() => loading.value && !!abortController.value)
 // 新建会话
 function handleAddSession() {
   chatStore.addSession()
@@ -150,7 +153,22 @@ async function handleRequest() {
     chatStore.persistNow()
   }
   catch (e) {
-    console.log(e)
+    console.dir(e)
+    const err = e as LlmAppError
+    if (err.type === 'abort') {
+      chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'done')
+      ElMessage.info('已停止生成')
+    }
+    else if (err.type === 'server') {
+      chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'error', err.message || '服务不可用')
+      ElMessage.error('服务暂时不可用，请稍后重试（5xx）')
+    }
+    else if (err.type === 'network') {
+      chatStore.updateMessageStatus(sessionIndex, assistantIndex, 'error', err.message || '网络异常')
+      ElMessage.error('网络异常，请检查网络连接')
+    }
+
+    chatStore.persistNow()
   }
   finally {
     if (flushTimer) {
@@ -160,6 +178,40 @@ async function handleRequest() {
     loading.value = false
     abortController.value = null
   }
+}
+
+// 重试
+function handleRetryMessage(assistantMessageIndex: number) {
+  if (loading.value)
+    return
+  const list = activeMessages.value
+  let userText = ''
+  for (let i = assistantMessageIndex - 1; i >= 0; i--) {
+    if (list[i]?.role === 'user') {
+      userText = list[i]?.content || ''
+      break
+    }
+  }
+  if (!userText) {
+    ElMessage.warning('未找到可重试的问题')
+    return
+  }
+
+  if (assistantMessageIndex - 1 >= 0) {
+    list.splice(assistantMessageIndex, 1)
+    list.splice(assistantMessageIndex - 1, 1)
+  }
+
+  queryKeys.value = userText
+  handleRequest()
+}
+
+function handleStopRequest() {
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+  }
+  loading.value = false
 }
 
 onMounted(() => {
@@ -229,12 +281,15 @@ onMounted(() => {
         </div>
         <div class="right-container">
           <div class="message-area">
-            <MessageComp ref="messageRef" :messages="activeMessages" :loading="loading" />
+            <MessageComp ref="messageRef" :messages="activeMessages" :loading="loading" @retry="handleRetryMessage" />
           </div>
           <div class="input-area">
             <el-input id="keyInput" v-model="queryKeys" placeholder="请输入内容" show-word-limit @keyup.enter="handleRequest" />
             <el-button class="action-btn" :loading="loading" type="primary" :disabled="!queryKeys" @click="handleRequest">
               <el-icon><Promotion /></el-icon>
+            </el-button>
+            <el-button class="action-btn" type="warning" :class="{ 'btn-hidden': !canStop }" :disabled="!canStop" @click="handleStopRequest">
+              停止
             </el-button>
           </div>
         </div>

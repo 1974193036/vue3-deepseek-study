@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
+import { RefreshRight } from '@element-plus/icons-vue'
 import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 import type { ChatMessage } from '@/store/chatStore'
@@ -12,6 +13,10 @@ const props = withDefaults(
     messages: () => [],
   },
 )
+
+const emit = defineEmits<{
+  retry: [index: number]
+}>()
 
 async function scrollToBottom() {
   await nextTick()
@@ -60,9 +65,6 @@ const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''
           <div class="message-item-content" :class="[item.role === 'assistant' ? 'message-item-content-left' : 'message-item-content-right']">
             <div class="message-item-text">
               <div v-html="renderMarkdown(item.content || '')" />
-              <!-- <div v-if="item.role === 'assistant'">
-                这里展示加载中...
-              </div> -->
               <div v-if="item.role === 'assistant' && item.status" class="status-row">
                 <div v-if="item.status === 'streaming' && !item.content" class="thinking-indicator">
                   <span class="thinking-text">思考中</span>
@@ -70,6 +72,17 @@ const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''
                   <span class="dot" />
                   <span class="dot" />
                 </div>
+                <span v-else-if="item.status === 'error'" class="status-tag status-error">生成失败</span>
+                <el-button
+                  v-if="item.status === 'error'"
+                  class="retry-btn"
+                  text
+                  size="small"
+                  @click="emit('retry', index)"
+                >
+                  <el-icon><RefreshRight /></el-icon>
+                  重试
+                </el-button>
               </div>
             </div>
           </div>
