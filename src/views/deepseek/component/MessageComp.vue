@@ -4,6 +4,7 @@ import { RefreshRight } from '@element-plus/icons-vue'
 import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 import type { ChatMessage } from '@/store/chatStore'
+import MarkdownItHighlightjs from 'markdown-it-highlightjs'
 
 const props = withDefaults(
   defineProps<{
@@ -44,7 +45,8 @@ const md = new MarkdownIt({
   linkify: true,
   typographer: true,
   breaks: true,
-})
+}).use(MarkdownItHighlightjs)
+
 const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''))
 </script>
 

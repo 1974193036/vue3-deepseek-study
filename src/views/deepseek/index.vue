@@ -284,10 +284,12 @@ onMounted(() => {
             <MessageComp ref="messageRef" :messages="activeMessages" :loading="loading" @retry="handleRetryMessage" />
           </div>
           <div class="input-area">
-            <el-input id="keyInput" v-model="queryKeys" placeholder="请输入内容" show-word-limit @keyup.enter="handleRequest" />
-            <el-button class="action-btn" :loading="loading" type="primary" :disabled="!queryKeys" @click="handleRequest">
-              <el-icon><Promotion /></el-icon>
-            </el-button>
+            <form @submit.prevent="handleRequest">
+              <el-input id="keyInput" v-model="queryKeys" placeholder="请输入内容" show-word-limit />
+              <el-button class="action-btn" :loading="loading" type="primary" :disabled="!queryKeys" @click="handleRequest">
+                <el-icon><Promotion /></el-icon>
+              </el-button>
+            </form>
             <el-button class="action-btn" type="warning" :class="{ 'btn-hidden': !canStop }" :disabled="!canStop" @click="handleStopRequest">
               停止
             </el-button>

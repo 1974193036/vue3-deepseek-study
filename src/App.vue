@@ -13,6 +13,7 @@ onMounted(() => {
 </template>
 
 <style>
+@import url(highlight.js/styles/default.css);
 ::-webkit-scrollbar {
   /**滚动条宽度*/
   width: 7px;
