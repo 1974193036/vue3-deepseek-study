@@ -78,6 +78,11 @@
   margin: 0.5rem 0;
 }
 
+:deep(img) {
+  max-width: 100%;
+  object-fit: cover;
+}
+
 :deep(pre) {
   margin: 0.5rem 0;
   font-size: 0.8125rem;

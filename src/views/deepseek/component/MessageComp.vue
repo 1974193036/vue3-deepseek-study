@@ -47,12 +47,70 @@ const md = new MarkdownIt({
   breaks: true,
 }).use(MarkdownItHighlightjs)
 
+// 自定义图片渲染规则，添加特殊标记
+md.renderer.rules.image = function (tokens, idx, options, _env, self) {
+  const token = tokens[idx]
+  const src = token.attrGet('src')
+  const alt = token.content || '图片'
+
+  if (src) {
+    // 添加自定义属性标记，便于后续解析
+    token.attrSet('data-md-image', 'true')
+    token.attrSet('data-src', src)
+    token.attrSet('data-alt', alt)
+  }
+
+  return self.renderToken(tokens, idx, options)
+}
+
+// const previewImageList = ref<string[]>([])
+// const showPreview = ref(false)
+// onMounted(async () => {
+//   // 利用事件委托，给messageCompBox注册点击事件，当点击到图片data-md-image的图片时，进行解析
+//   await nextTick()
+//   const messageCompBoxDiv = document.getElementById('messageCompBox')
+//   if (messageCompBoxDiv) {
+//     messageCompBoxDiv.addEventListener('click', (e) => {
+//       const target = e.target as HTMLElement
+//       if (target.tagName === 'IMG' && target.hasAttribute('data-md-image')) {
+//         const src = target.getAttribute('data-src')
+//         if (src) {
+//           // 这里直接在浏览器新页签打开图片
+//           // window.open(src, '_blank')
+//           previewImageList.value = [src]
+//           showPreview.value = true
+//         }
+//       }
+//     })
+//   }
+// })
+// 需要配合 elementplus-image-viewer 组件才能实现图片预览
+//  <el-image-viewer
+//       v-if="showPreview"
+//       :url-list="previewImageList"
+//       :initial-index="0"
+//       @close="showPreview = false"
+//     />
+
 const renderMarkdown = (text: string) => DOMPurify.sanitize(md.render(text || ''))
 </script>
 
 <template>
   <template v-if="messages.length > 0">
-    <div id="messageCompBox" class="container-message">
+    <div
+      id="messageCompBox"
+      v-viewer="{
+        movable: true,
+        filter: (img: HTMLImageElement) => img.hasAttribute('data-md-image'),
+        toolbar: {
+          zoomIn: true, // 放大
+          zoomOut: true, // 缩小
+          rotateLeft: true, // 向左旋转
+          rotateRight: true, // 向右旋转
+        },
+      }"
+      class="container-message"
+    >
       <div v-for="(item, index) in messages" :key="`message_${index}`" class="box-item">
         <div
           v-if="item.role === 'assistant' || item.content"
